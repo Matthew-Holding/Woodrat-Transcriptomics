@@ -14,3 +14,9 @@ Software required:
 * [DESeq2](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html)
 
 
+## Contents
+* [Read trimming and filtering](#read-trimming-and-filtering)
+
+
+### Read trimming and filtering
+
