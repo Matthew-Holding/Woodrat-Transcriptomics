@@ -62,9 +62,10 @@ Running /Shell_scripts/rna_submitarray.sh on a Slurm system will create one job 
 ```
 bash rna_submitarray.sh
 ```
-The HISAT2 alignments and subsequent conversion to a sorted and indexed bam file (using samtools) are as follows:
+The above shell scripts will execute HISAT2 alignments and subsequent conversion to a sorted and indexed bam file (using samtools) as follows:
 
 ```
+cd alignments
 mkdir ${FILENAME}_align
 cd ${FILENAME}_align
 hisat2 -q --phred33 --no-temp-splicesite --no-mixed --no-discordant --max-intronlen 150000 \
