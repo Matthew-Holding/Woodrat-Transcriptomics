@@ -33,6 +33,12 @@ mkdir htseq
 ```
 
 ### Read Trimming and Filtering
+We will impose these filters to trim reads:
+
+* Remove 5' end bases if phred quality is below 20
+* Remove 3' end bases if phred quality is below 20
+* Remove Illumina adapter strings
+* Minimum read length of each read in a pair = 20bp
 ```
 cat sample_names.txt | parallel -j 6 "~/software/TrimGalore-0.6.5/trim_galore \
 --cores 4 -o trimmed \
