@@ -1,5 +1,6 @@
 # Analysis of differential gene expression in woodrats
 
+![Gene Expression](/gene_plus_RNA.png)
 
 Software required:
 
