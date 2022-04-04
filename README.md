@@ -24,8 +24,8 @@ Software required:
 Set up working directory. Place raw fastq files containing RNA-seq paireed in reads in a subfolder called "raw"
 
 ```
-mkdir Neotoma_Transcriptomics
-cd Neotoma_Transcriptomics
+mkdir Neotoma_transcriptomics
+cd Neotoma_transcriptomics
 mkdir raw
 mkdir trimmed
 mkdir alignments
@@ -44,3 +44,15 @@ cat sample_names.txt | parallel -j 6 "~/software/TrimGalore-0.6.5/trim_galore \
 --cores 4 -o trimmed \
 --paired raw/{}_R1_001.fastq.gz raw/{}_R2_001.fastq.gz &> trimmed/{}_tg.log &"
 ```
+
+
+### HISAT2 Alignment
+Build a HISAT2 database from the Neotoma bryanti genome
+
+```
+cd genomes
+hisat2-build -p 23 Neotoma_bryanti.Arrow.fasta Nbryanti_db &
+```
+
+
+
