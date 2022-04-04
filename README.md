@@ -15,8 +15,24 @@ Software required:
 
 
 ## Contents
-* [Read trimming and filtering](#read-trimming-and-filtering)
+
+* [Build Directory Structure](#build-directory-structure)
+* [Read Trimming and Filtering](#read-trimming-and-filtering)
 
 
-### Read trimming and filtering
+### Build Directory Structure 
+Set up working directory. Place raw fastq files containing RNA-seq paireed in reads in a subfolder called "raw"
 
+```
+mkdir Neotoma_Transcriptomics
+cd Neotoma_Transcriptomics
+mkdir raw
+mkdir trimmed
+mkdir alignments
+mkdir htseq
+```
+
+### Read Trimming and Filtering
+```
+cat list.txt | parallel -j 12 "cd {}; trim_galore --cores 4 --paired {}_1.fq.gz {}_2.fq.gz &> {}_tg.log &"
+```
