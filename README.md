@@ -34,5 +34,7 @@ mkdir htseq
 
 ### Read Trimming and Filtering
 ```
-cat list.txt | parallel -j 12 "cd {}; trim_galore --cores 4 --paired {}_1.fq.gz {}_2.fq.gz &> {}_tg.log &"
+cat sample_names.txt | parallel -j 6 "~/software/TrimGalore-0.6.5/trim_galore \
+--cores 4 -o trimmed \
+--paired raw/{}_R1_001.fastq.gz raw/{}_R2_001.fastq.gz &> trimmed/{}_tg.log &"
 ```
