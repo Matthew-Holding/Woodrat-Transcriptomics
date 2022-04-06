@@ -108,6 +108,7 @@ htseq-count --format bam \
 --mode=union \
 --nonunique=random \
 --secondary-alignments=ignore \
+--samout=$sample_name.sam
 -c $sample_name.tsv \
 -n 8 \
 W396_C_S1_align_sorted.bam \
