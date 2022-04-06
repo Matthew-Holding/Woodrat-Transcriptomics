@@ -18,6 +18,7 @@ Software required:
 
 * [Build Directory Structure](#build-directory-structure)
 * [Read Trimming and Filtering](#read-trimming-and-filtering)
+* [HTSeq Counts of Mapping Reads](#htseq-counts-of-mapping-reads)
 
 
 ### Build Directory Structure 
@@ -82,8 +83,37 @@ hisat2 -q --phred33 --no-temp-splicesite --no-mixed --no-discordant --max-intron
 rm ${FILENAME}_align.sam
 ```
 
+With the HISAT2 alignments in hand, we can now get counts of reads aligning to each feature (i.e. each gene). 
 
 
+### HTSeq Counts of Mapping Reads
+
+We will use the Neotoma bryanti contig-level assembly and corresponding annotation file found at: https://osf.io/bsd4h/
+
+First, we need to install HTSeq (v2.0.1)
+
+```
+pip install htseq
+pip install --upgrade numpy
+```
+
+Next, we count the reads aligned at each gene:
+```
+htseq-count --format bam \
+--stranded=reverse \
+--type=exon \
+--idattr=ID \
+--additional-attr=Name \
+--add-chromosome-info \
+--mode=union \
+--nonunique=random \
+--secondary-alignments=ignore \
+-c $sample_name.tsv \
+-n 8 \
+W396_C_S1_align_sorted.bam \
+Neotoma_bryanti.Contigs.gff3
+```
+The output of htseq-count for each sample is a tab-separated file containing ID and Name of each gene, and an integer value for the read count.
 
 
 
