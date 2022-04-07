@@ -104,12 +104,13 @@ htseq-count --format bam \
 --type=exon \
 --idattr=ID \
 --additional-attr=Name \
+--order=pos \
 --add-chromosome-info \
 --mode=union \
 --nonunique=random \
 --secondary-alignments=ignore \
---samout=$sample_name.sam \
--c $sample_name.tsv \
+--samout=W396_C_S1.sam \
+-c W396_C_S1.tsv \
 -n 8 \
 W396_C_S1_align_sorted.bam \
 Neotoma_bryanti.Contigs.gff3
