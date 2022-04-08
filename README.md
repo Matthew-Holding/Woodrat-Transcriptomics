@@ -96,7 +96,7 @@ The gff3 annotation file required some clean up for proper use with HTSeq
 #removing duplicate exon lines present in a small number of genes
 awk '!a[$9]++' Neotoma_bryanti.Contigs.gff3 > Neotoma_bryanti.Contigs.dedup.gff3
 
-#using a gffutils script to create a shared "gene_id" value that is shared between the "gene" feature lines and the child "exon" lines
+#using a gffutils script to create a shared "gene_id" value among gene, exon, and mrna lines
 python gffutils_edit_exon.py
 python gffutils_edit_gene.py
 python gffutils_edit_mrna.py
