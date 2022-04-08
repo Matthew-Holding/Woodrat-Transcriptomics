@@ -90,7 +90,26 @@ With the HISAT2 alignments in hand, we can now get counts of reads aligning to e
 
 We will use the Neotoma bryanti contig-level assembly and corresponding annotation file found at: https://osf.io/bsd4h/
 
-First, we need to install HTSeq (v2.0.1)
+The gff3 annotation file required some clean up for proper use with HTSeq
+
+```
+#removing duplicate exon lines present in a small number of genes
+awk '!a[$9]++' Neotoma_bryanti.Contigs.gff3 > Neotoma_bryanti.Contigs.dedup.gff3
+
+#using a gffutils script to create a shared "gene_id" value that is shared between the "gene" feature lines and the child "exon" lines
+python gffutils_edit_exon.py
+python gffutils_edit_gene.py
+python gffutils_edit_mrna.py
+rm Neotoma_bryanti.Contigs.dedup.gff3
+rm tmp.gff
+rm tmp2.gff
+mv tmp3.gff Neotoma_bryanti.Contigs.dedup.geneid.gff3
+
+#make tig names match our genome alignments by removing "Nbry_" prefix on fasta name lines
+sed -i "s/Nbry_tig/tig/g" Neotoma_bryanti.Contigs.dedup.geneid.gff3
+```
+
+We need to install the latest HTSeq (v2.0.1)
 
 ```
 pip install htseq
@@ -102,7 +121,7 @@ Next, we count the reads aligned at each gene:
 htseq-count --format bam \
 --stranded=reverse \
 --type=exon \
---idattr=ID \
+--idattr=gene_id \
 --additional-attr=Name \
 --order=pos \
 --add-chromosome-info \
@@ -113,7 +132,7 @@ htseq-count --format bam \
 -c W396_C_S1.tsv \
 -n 8 \
 W396_C_S1_align_sorted.bam \
-Neotoma_bryanti.Contigs.gff3
+../Neotoma_bryanti.Contigs.dedup.geneid.gff3
 ```
 The output of htseq-count for each sample is a tab-separated file containing ID and Name of each gene, and an integer value for the read count.
 
