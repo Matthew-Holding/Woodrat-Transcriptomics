@@ -96,17 +96,18 @@ The gff3 annotation file required some clean up for proper use with HTSeq
 #removing duplicate exon lines present in a small number of genes
 awk '!a[$9]++' Neotoma_bryanti.Contigs.gff3 > Neotoma_bryanti.Contigs.dedup.gff3
 
-#using a gffutils script to create a shared "gene_id" value among gene, exon, and mrna lines
+#edited three Sult1a1 genes whose stop_codon line was not fully withiin an exon
+#the used a gffutils script to create a shared "gene_id" and "gene_name" value among gene, exon, and mrna lines
 python gffutils_edit_exon.py
 python gffutils_edit_gene.py
 python gffutils_edit_mrna.py
+python gffutils_edit_exon_Name.py
 rm Neotoma_bryanti.Contigs.dedup.gff3
-rm tmp.gff
-rm tmp2.gff
-mv tmp3.gff Neotoma_bryanti.Contigs.dedup.geneid.gff3
+rm tmp.gff; rm tmp2.gff; rm tmp3.gff
+mv tmp4.gff Neotoma_bryanti.Contigs.dedup.geneid.gff3
 
 #make tig names match our genome alignments by removing "Nbry_" prefix on fasta name lines
-sed -i "s/Nbry_tig/tig/g" Neotoma_bryanti.Contigs.dedup.geneid.gff3
+sed -i "s/Nbry_tig/tig/g" Neotoma_bryanti.Contigs.dedup.geneid.fixup.gff3
 ```
 
 We need to install the latest HTSeq (v2.0.1)
@@ -122,19 +123,22 @@ htseq-count --format bam \
 --stranded=reverse \
 --type=exon \
 --idattr=gene_id \
---additional-attr=Name \
---order=pos \
 --add-chromosome-info \
+--additional-attr=gene_name \
+--order=pos \
 --mode=union \
 --nonunique=random \
 --secondary-alignments=ignore \
---samout=W396_C_S1.sam \
--c W396_C_S1.tsv \
+--samout=/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/htseq/${FILENAME}_htseq/${FILENAME}.sam \
+-c /data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/htseq/${FILENAME}_htseq/${FILENAME}.counts.tsv \
 -n 8 \
-W396_C_S1_align_sorted.bam \
-../Neotoma_bryanti.Contigs.dedup.geneid.gff3
+/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/alignments/${FILENAME}_align/${FILENAME}_align_sorted.bam \
+/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/Neotoma_bryanti.Contigs.dedup.geneid.fixup.gff3
+
 ```
-The output of htseq-count for each sample is a tab-separated file containing ID and Name of each gene, and an integer value for the read count.
+The output of htseq-count output for each sample is a tab-separated file containing ID and gene_id and gene_name of each gene, and an integer value for the read counts aligning to all exons.
+
+
 
 
 
