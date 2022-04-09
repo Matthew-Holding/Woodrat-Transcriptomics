@@ -117,8 +117,12 @@ pip install htseq
 pip install --upgrade numpy
 ```
 
-Next, we count the reads aligned at each gene:
+Next, we count the reads aligned at each exon of gene by calling the following slurm array scripts:
 ```
+bash htseq_submit_array.sh
+
+#the above shell scripts calls repeated instances of htseq_array.sh, which submits the following for each sample's alignment:
+
 htseq-count --format bam \
 --stranded=reverse \
 --type=exon \
@@ -137,6 +141,12 @@ htseq-count --format bam \
 
 ```
 The output of htseq-count output for each sample is a tab-separated file containing ID and gene_id and gene_name of each gene, and an integer value for the read counts aligning to all exons.
+
+```
+#Pull the htseq-count *tsv output into a single directory for export and read in R
+mkdir htseq/Counts_files; cd htseq
+for dir in $(ls -d W*); do cp $dir/*tsv Counts_files/; done
+```
 
 
 
