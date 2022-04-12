@@ -140,12 +140,18 @@ htseq-count --format bam \
 /data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/Neotoma_bryanti.Contigs.dedup.geneid.fixup.gff3
 
 ```
-The output of htseq-count output for each sample is a tab-separated file containing ID and gene_id and gene_name of each gene, and an integer value for the read counts aligning to all exons.
+The output of htseq-count output for each sample is a tab-separated file containing ID and gene_id and gene_name of each gene, and an integer value for the read counts aligning to all exons. 
+
+Prepare a directory with only these counts tsv files and export it to your local machine for DESeq2 analysis:
 
 ```
 #Pull the htseq-count *tsv output into a single directory for export and read in R
 mkdir htseq/Counts_files; cd htseq
 for dir in $(ls -d W*); do cp $dir/*tsv Counts_files/; done
+zip -r counts.zip Counts_files
+
+#From a terminal open to your local machine run:
+scp -r mholding@pronghorn.rc.unr.edu:/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/htseq/counts.zip ~/Desktop/
 ```
 
 
