@@ -314,6 +314,26 @@ fviz_pca_biplot(pca, repel = TRUE, axes = c(1,2),
                 ind.fill = dds$Species,
                 invisible = c( "quali"), #remove enlarged symbol for group mean
                 title = "Woodrat Cecum DEG PCA")
+                
+#Make volcano plots for each effect
+#example below looks at diet effect in N. lepida
+diet_Nlep_volc <- merge(as.data.frame(diet_lepida), 
+      genes, by="row.names", all.y=FALSE)
+EnhancedVolcano(diet_Nlep_volc,
+                lab = diet_Nlep_volc$gene_id,
+                title = "Volcano plot",
+                subtitle = bquote(italic("Diet Effect in N. lepida")),
+                x = 'log2FoldChange',
+                y = 'padj',
+                #xlim = c(-5.5, 5.5),
+                #ylim = c(0, -log10(10e-12)),
+                pCutoff = 0.05,
+                FCcutoff = 2,
+                labSize = 2.0,
+                col = c('grey30', 'forestgreen', 'royalblue', 'red2'),
+                drawConnectors = TRUE,
+                widthConnectors = 0.25,
+)                
 ```
 
 
