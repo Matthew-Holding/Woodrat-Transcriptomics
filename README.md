@@ -19,6 +19,7 @@ Software required:
 * [Build Directory Structure](#build-directory-structure)
 * [Read Trimming and Filtering](#read-trimming-and-filtering)
 * [HTSeq Counts of Mapping Reads](#htseq-counts-of-mapping-reads)
+* [DESeq2 Analysis of Differential Expression using R](#deseq2-analysis-of-differential-expression-using-r)
 
 
 ### Build Directory Structure 
