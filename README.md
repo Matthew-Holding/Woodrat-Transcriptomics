@@ -151,14 +151,173 @@ for dir in $(ls -d W*); do cp $dir/*tsv Counts_files/; done
 zip -r counts.zip Counts_files
 
 #From a terminal open to your local machine run:
-scp -r mholding@pronghorn.rc.unr.edu:/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/htseq/counts.zip ~/Desktop/
+cd ~/Desktop
+mkdir DESeq2_Neotoma_transcriptomics
+scp -r mholding@pronghorn.rc.unr.edu:/data/gpfs/assoc/matocqlab/Neotoma_transcriptomics/htseq/counts.zip ~/Desktop/DESeq2_Neotoma_transcriptomics
+```
+
+### DESeq2 Analysis of Differential Expression using R
+
+With the counts files on your personal computer, R quickly processes the differential expression analysis. 
+
+Set up directory structure for analysis in R
+```
+cd ~/Desktop/DESeq2_Neotoma_transcriptomics/
+unzip counts.zip
+mkdir DEGs; mkdir Meta_data; mkdir Plots
+cd Counts_files
+mkdir Cecum; mkdir Foregut; mkdir Liver; mkdir SmallIntestine
+cd ../
+```
+
+Place the tsv counts files into appropriate subdirectories within Counts_files/ for each tissues type, such as "Cecum", "Liver", etc.
+Place meta-data files containing sample information such as Species and Diet into the folder Meta_data/
+
+Now you can start RStudio and run the following:
+
+```
+#load R packages for DEG data analysis
+library(DESeq2)
+library(GenomicFeatures)
+library(apeglm)
+library(ashr)
+library(IHW)
+library(PoiClaClu)
+
+#load R packages for data visualization
+library(RColorBrewer)
+library(pheatmap)
+library(factoextra)
+library(plotly)
+library(stats)
+library(MASS)
+library(reshape2)
+library(viridis)
+library(ggdendro)
+library(gridExtra)
+library(gtable)
+library(grid)
+library(EnhancedVolcano)
+library(expss)
+
+#set  working directory and subdirectory with counts
+setwd("~/Desktop/DESeq2_Neotoma_transcriptomics/")
+
+#Choose which tissue to analyze
+directory <- "Counts_files/Cecum/"
+directory <- "Counts_files/Foregut/"
+directory <- "Counts_files/Liver/"
+directory <- "Counts_files/SmallIntestine/"
+
+#get  names of htseq-count output files
+files <-  list.files(directory, pattern = ".tsv")
+
+#sample metadata loaded here
+#choose proper match to input samples
+sampleTable <- read.table("Meta_data/cecum_meta.txt", header = TRUE)
+
+#build group variable to facilitate contrasts (rather than specifying interactions model)
+#approach detailed in https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#interactions
+sampleTable$group <- factor(paste0(sampleTable$Species,"_",sampleTable$Diet))
+
+#build dds object for DESeq2, design is a linear model formula given variables to test
+dds <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
+                                  directory = directory,
+                                  design= ~ Species + Diet + Species:Diet)
+
+#set reference levels for factors
+dds$Species <- relevel(dds$Species, ref = "N_bryanti")
+dds$Diet <- relevel(dds$Diet, ref = "RHCA")
+
+
+#Run the differential expression analysis on the dataset
+dds <- DESeq(dds)
+resultsNames(dds)
+
+#read in table of Name and gene_id for results export
+genes <- read.table("gene_names.txt", header = TRUE, sep = "\t",
+                    row.names = 1)
+
+#Get table of significant effect of species given a RHCA diet
+#Using FDR cutoff of p < 0.05 and required log2fold change above 2
+species_RHCA <- results(dds, contrast=c("Species","N_lepida","N_bryanti"), alpha = 0.05)
+summary(species_RHCA)
+write.table(merge(as.data.frame(subset(species_RHCA, species_RHCA$padj < 0.05 & abs(species_RHCA$log2FoldChange) > 2)), 
+                  genes, by="row.names", all.y=FALSE),
+            file = "DEGs/species_RHCA.txt",
+            quote = FALSE, sep = "\t", row.names=FALSE)
+#The effect of species given a PRFA diet
+species_PRFA <- results(dds, list( c("Species_N_lepida_vs_N_bryanti","SpeciesN_lepida.DietPRFA") ), alpha = 0.05)
+summary(species_PRFA)
+write.table(merge(as.data.frame(subset(species_PRFA, species_PRFA$padj < 0.05 & abs(species_PRFA$log2FoldChange) > 2)), 
+                  genes, by="row.names", all.y=FALSE),
+            file = "DEGs/species_PRFA.txt",
+            quote = FALSE, sep = "\t", row.names=FALSE)
+
+#The effect of diet in N. bryanti
+diet_bryanti <- results(dds, contrast=c("Diet","PRFA","RHCA"), alpha = 0.05)
+summary(diet_bryanti)
+write.table(merge(as.data.frame(subset(diet_bryanti, diet_bryanti$padj < 0.05 & abs(diet_bryanti$log2FoldChange) > 2)), 
+                  genes, by="row.names", all.y=FALSE),
+            file = "DEGs/diet_bryanti.txt",
+            quote = FALSE, sep = "\t", row.names=FALSE)
+
+#The effect of diet in N. lepida
+diet_lepida <- results(dds, list( c("Diet_PRFA_vs_RHCA","SpeciesN_lepida.DietPRFA") ), alpha = 0.05)
+summary(diet_lepida)
+write.table(merge(as.data.frame(subset(diet_lepida, diet_lepida$padj < 0.05 & abs(diet_lepida$log2FoldChange) > 2)), 
+                  genes, by="row.names", all.y=FALSE),
+            file = "DEGs/diet_lepida.txt",
+            quote = FALSE, sep = "\t", row.names=FALSE)
+
+#The genes that show a significant diet x species interaction
+#i.e. "Is the diet effect different across species?"
+interaction_result <- results(dds, name="SpeciesN_lepida.DietPRFA", alpha = 0.05)
+summary(interaction_result)
+write.table(merge(as.data.frame(subset(interaction_result, interaction_result$padj < 0.05 & abs(interaction_result$log2FoldChange) > 2)), 
+                  genes, by="row.names", all.y=FALSE),
+            file = "DEGs/interaction_result.txt",
+            quote = FALSE, sep = "\t", row.names=FALSE)
+
+
+#Plot samples in cluster analysis heatmap
+vsd <- vst(dds, blind=FALSE)
+sampleDists <- dist(t(assay(vsd)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste( vsd$Species, vsd$Diet, sep="--")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+
+#Plot samples in PCA space with important genes as loading vectors
+#Want to use fviz_pca_biplot() instead of default ggplot from DESeq2
+# perform a PCA on the data in assay(x) for the selected genes
+CEN = scale(assay(vsd), center = T, scale = T)
+pca <- prcomp(t(CEN))
+loadings <- as.data.frame(pca$rotation)
+# visualize
+fviz_pca_biplot(pca, repel = TRUE, axes = c(1,2),
+                select.var = list(contrib = 25), #draw top 100 arrows
+                #select.var = list(name = c("Q375E", "Q375P")),  #alternative to draw specific substitution loadings
+                addEllipses = TRUE,
+                habillage = dds$group,
+                col.ind = dds$Species,
+                ellipse.level=0.95,
+                geom=c("point"), pointsize = 3.5,   #change to geom=c("point","text") for sample ID
+                ind.shape = dds$Diet,
+                ind.fill = dds$Species,
+                invisible = c( "quali"), #remove enlarged symbol for group mean
+                title = "Woodrat Cecum DEG PCA")
 ```
 
 
-
-
-
-
+The lists now in the DEGs/ directory contain the gene_ids (last column) that can be input into the ShinyGO web application for GO analyses of enrichment
+http://bioinformatics.sdstate.edu/go/
+The file gene_names.txt contains the full gene list from N. bryanti to use as background for the GO enrichment analyses.
 
 
 
