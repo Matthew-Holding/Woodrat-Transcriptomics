@@ -185,8 +185,7 @@ library(apeglm)
 library(ashr)
 library(IHW)
 library(PoiClaClu)
-library(edgeR)
-library(statmod)
+
 
 #load R packages for data visualization
 library(RColorBrewer)
@@ -204,8 +203,7 @@ library(grid)
 library(EnhancedVolcano)
 library(expss)
 library(ggplot2)
-library(VennDiagram)
-library(ggVennDiagram)
+
 
 
 setwd("~/Desktop")
