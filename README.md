@@ -185,6 +185,8 @@ library(apeglm)
 library(ashr)
 library(IHW)
 library(PoiClaClu)
+library(edgeR)
+library(statmod)
 
 #load R packages for data visualization
 library(RColorBrewer)
@@ -201,15 +203,26 @@ library(gtable)
 library(grid)
 library(EnhancedVolcano)
 library(expss)
+library(ggplot2)
+library(VennDiagram)
+library(ggVennDiagram)
+
+
+setwd("~/Desktop")
+dir.create("DESeq2_Neotoma_transcriptomics")
+#download and unzip counts.zip and place that folder in DESeq2_Neotoma_transcriptomics directory
 
 #set  working directory and subdirectory with counts
 setwd("~/Desktop/DESeq2_Neotoma_transcriptomics/")
+dir.create("DEGs")
+dir.create("Plots")
+
 
 #Choose which tissue to analyze
 directory <- "Counts_files/Cecum/"
-directory <- "Counts_files/Foregut/"
-directory <- "Counts_files/Liver/"
-directory <- "Counts_files/SmallIntestine/"
+#directory <- "Counts_files/Foregut/"
+#directory <- "Counts_files/Liver/"
+#directory <- "Counts_files/SmallIntestine/"
 
 #get  names of htseq-count output files
 files <-  list.files(directory, pattern = ".tsv")
@@ -225,12 +238,7 @@ sampleTable$group <- factor(paste0(sampleTable$Species,"_",sampleTable$Diet))
 #build dds object for DESeq2, design is a linear model formula given variables to test
 dds <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
                                   directory = directory,
-                                  design= ~ Species + Diet + Species:Diet)
-
-#set reference levels for factors
-dds$Species <- relevel(dds$Species, ref = "N_bryanti")
-dds$Diet <- relevel(dds$Diet, ref = "RHCA")
-
+                                  design= ~ 0 + group)
 
 #Run the differential expression analysis on the dataset
 dds <- DESeq(dds)
@@ -240,46 +248,68 @@ resultsNames(dds)
 genes <- read.table("gene_names.txt", header = TRUE, sep = "\t",
                     row.names = 1)
 
-#Get table of significant effect of species given a RHCA diet
+
+#set up contrasts of interest
+
+#compare the average effect of being a bryanti to the average effect of being lepida
+con.species<- makeContrasts(lepVSbry = (N_lepida_PRFA + N_lepida_RHCA)/2
+                             - (N_bryanti_PRFA + N_bryanti_RHCA)/2,
+                             levels=design)
+
+#compare the average effect of eating RHCA to the average effect of eating PRFA
+con.diet <- makeContrasts(PRFAvsRHCA = (N_lepida_PRFA + N_bryanti_PRFA)/2
+                               - (N_lepida_RHCA + N_bryanti_RHCA)/2,
+                               levels=design)
+
+#Is the effect of species different depending on diet consumed
+con.interaction <- makeContrasts(Interaction = ((N_bryanti_PRFA - N_lepida_PRFA)
+                                                - (N_bryanti_RHCA - N_lepida_RHCA)),
+                                 levels=design)
+
+
+
+#Get table of average effect of species
 #Using FDR cutoff of p < 0.05 and required log2fold change above 2
-species_RHCA <- results(dds, contrast=c("Species","N_lepida","N_bryanti"), alpha = 0.05)
-summary(species_RHCA)
-write.table(merge(as.data.frame(subset(species_RHCA, species_RHCA$padj < 0.05 & abs(species_RHCA$log2FoldChange) > 2)), 
+species_res <- results(dds, contrast=con.species, alpha = 0.05)
+summary(species_res)
+write.table(merge(as.data.frame(subset(species_res, species_res$padj < 0.05 & abs(species_res$log2FoldChange) > 2)), 
                   genes, by="row.names", all.y=FALSE),
-            file = "DEGs/species_RHCA.txt",
-            quote = FALSE, sep = "\t", row.names=FALSE)
-#The effect of species given a PRFA diet
-species_PRFA <- results(dds, list( c("Species_N_lepida_vs_N_bryanti","SpeciesN_lepida.DietPRFA") ), alpha = 0.05)
-summary(species_PRFA)
-write.table(merge(as.data.frame(subset(species_PRFA, species_PRFA$padj < 0.05 & abs(species_PRFA$log2FoldChange) > 2)), 
-                  genes, by="row.names", all.y=FALSE),
-            file = "DEGs/species_PRFA.txt",
+            file = "DEGs/species_res.txt",
             quote = FALSE, sep = "\t", row.names=FALSE)
 
-#The effect of diet in N. bryanti
-diet_bryanti <- results(dds, contrast=c("Diet","PRFA","RHCA"), alpha = 0.05)
-summary(diet_bryanti)
-write.table(merge(as.data.frame(subset(diet_bryanti, diet_bryanti$padj < 0.05 & abs(diet_bryanti$log2FoldChange) > 2)), 
+#plot most significant gene for species:  
+ix = which.min(species_res$padj) # most significant
+barplot(assay(dds)[ix,],las=2, main=rownames(dds)[ ix  ],col =as.factor(dds$group)  )
+plotCounts(dds, gene=rownames(dds[ix,]), las=2, intgroup=c("group"), main=rownames(dds[ix,]), )
+
+
+#The average effect of diet 
+diet_res <- results(dds, contrast = con.diet , alpha = 0.05)
+summary(diet_res)
+write.table(merge(as.data.frame(subset(diet_res, diet_res$padj < 0.05 & abs(diet_res$log2FoldChange) > 2)), 
                   genes, by="row.names", all.y=FALSE),
-            file = "DEGs/diet_bryanti.txt",
+            file = "DEGs/diet_res.txt",
             quote = FALSE, sep = "\t", row.names=FALSE)
 
-#The effect of diet in N. lepida
-diet_lepida <- results(dds, list( c("Diet_PRFA_vs_RHCA","SpeciesN_lepida.DietPRFA") ), alpha = 0.05)
-summary(diet_lepida)
-write.table(merge(as.data.frame(subset(diet_lepida, diet_lepida$padj < 0.05 & abs(diet_lepida$log2FoldChange) > 2)), 
-                  genes, by="row.names", all.y=FALSE),
-            file = "DEGs/diet_lepida.txt",
-            quote = FALSE, sep = "\t", row.names=FALSE)
+#plot most significant gene for diet:  
+ix = which.min(diet_res$padj) # most significant
+barplot(assay(dds)[ix,],las=2, main=rownames(dds)[ ix  ],col =as.factor(dds$group)  )
+plotCounts(dds, gene=rownames(dds[ix,]), las=2, intgroup=c("group"), main=rownames(dds[ix,]), )
 
 #The genes that show a significant diet x species interaction
 #i.e. "Is the diet effect different across species?"
-interaction_result <- results(dds, name="SpeciesN_lepida.DietPRFA", alpha = 0.05)
+interaction_result <- results(dds, contrast = con.Interaction, alpha = 0.05)
 summary(interaction_result)
 write.table(merge(as.data.frame(subset(interaction_result, interaction_result$padj < 0.05 & abs(interaction_result$log2FoldChange) > 2)), 
                   genes, by="row.names", all.y=FALSE),
             file = "DEGs/interaction_result.txt",
             quote = FALSE, sep = "\t", row.names=FALSE)
+
+
+#plot most significant gene for interaction:  
+ix = which.min(interaction_result$padj) # most significant
+barplot(assay(dds)[ix,],las=2, main=rownames(dds)[ ix  ],col =as.factor(dds$group)  )
+plotCounts(dds, gene=rownames(dds[ix,]), las=2, intgroup=c("group"), main=rownames(dds[ix,]), )
 
 
 #Plot samples in cluster analysis heatmap
@@ -314,15 +344,15 @@ fviz_pca_biplot(pca, repel = TRUE, axes = c(1,2),
                 ind.fill = dds$Species,
                 invisible = c( "quali"), #remove enlarged symbol for group mean
                 title = "Woodrat Cecum DEG PCA")
-                
+
 #Make volcano plots for each effect
 #example below looks at diet effect in N. lepida
-diet_Nlep_volc <- merge(as.data.frame(diet_lepida), 
+diet_volc <- merge(as.data.frame(diet_res), 
       genes, by="row.names", all.y=FALSE)
-EnhancedVolcano(diet_Nlep_volc,
-                lab = diet_Nlep_volc$gene_id,
+EnhancedVolcano(diet_volc,
+                lab = diet_volc$gene_id,
                 title = "Volcano plot",
-                subtitle = bquote(italic("Diet Effect in N. lepida")),
+                subtitle = bquote(italic("Average Diet Effect")),
                 x = 'log2FoldChange',
                 y = 'padj',
                 #xlim = c(-5.5, 5.5),
@@ -333,7 +363,7 @@ EnhancedVolcano(diet_Nlep_volc,
                 col = c('grey30', 'forestgreen', 'royalblue', 'red2'),
                 drawConnectors = TRUE,
                 widthConnectors = 0.25,
-)                
+)
 ```
 
 
