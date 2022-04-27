@@ -299,7 +299,7 @@ plotCounts(dds, gene=rownames(dds[ix,]), las=2, intgroup=c("group"), main=rownam
 
 #The genes that show a significant diet x species interaction
 #i.e. "Is the diet effect different across species?"
-interaction_result <- results(dds, contrast = con.Interaction, alpha = 0.05)
+interaction_result <- results(dds, contrast = con.interaction, alpha = 0.05)
 summary(interaction_result)
 write.table(merge(as.data.frame(subset(interaction_result, interaction_result$padj < 0.05 & abs(interaction_result$log2FoldChange) > 2)), 
                   genes, by="row.names", all.y=FALSE),
