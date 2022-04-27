@@ -185,6 +185,7 @@ library(apeglm)
 library(ashr)
 library(IHW)
 library(PoiClaClu)
+library(limma)
 
 
 #load R packages for data visualization
