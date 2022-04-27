@@ -209,7 +209,6 @@ library(ggplot2)
 
 setwd("~/Desktop")
 dir.create("DESeq2_Neotoma_transcriptomics")
-#download and unzip counts.zip and place that folder in DESeq2_Neotoma_transcriptomics directory
 
 #set  working directory and subdirectory with counts
 setwd("~/Desktop/DESeq2_Neotoma_transcriptomics/")
@@ -249,6 +248,9 @@ genes <- read.table("gene_names.txt", header = TRUE, sep = "\t",
 
 
 #set up contrasts of interest
+#first create appropriate design matrix:
+design <- model.matrix(~0 + group, data = sampleTable)
+colnames(design) <- levels(sampleTable$group)
 
 #compare the average effect of being a bryanti to the average effect of being lepida
 con.species<- makeContrasts(lepVSbry = (N_lepida_PRFA + N_lepida_RHCA)/2
